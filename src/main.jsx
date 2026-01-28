@@ -1,9 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from '@/App';
-import '@/index.css';
+import App from './App';       // Changed from '@/App' to './App'
+import './index.css';         // Changed from '@/index.css' to './index.css'
 
-// Match this to the ID in your index.html
-ReactDOM.createRoot(document.getElementById('app')).render(
-  <App />
-);
+// IMPORTANT: Match the ID "app" from your index.html
+const rootElement = document.getElementById('app'); 
+
+if (rootElement) {
+  ReactDOM.createRoot(rootElement).render(
+    <App />
+  );
+}
