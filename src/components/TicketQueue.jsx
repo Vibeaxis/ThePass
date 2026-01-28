@@ -48,57 +48,43 @@ const TicketQueue = ({ onNewTicket, tickets = [] }) => {
       }
     }
   }, [shiftPhase, gameStatus, selectedMenu]);
-
-  useEffect(() => {
-    // Only run if playing and in Service
-    if (gameStatus !== 'playing' || shiftPhase !== 'Service') {
-      if (intervalRef.current) {
-        console.log(`[TicketQueue] Stopping Spawner (Phase: ${shiftPhase}, Status: ${gameStatus})`);
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
+useEffect(() => {
+  // 1. Guard: Only spawn if playing and in Service
+  if (gameStatus !== 'playing' || shiftPhase !== 'Service') {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
+    return;
+  }
 
-    const calculatedInterval = getInterval();
-    console.log(`[TicketQueue] Starting Spawner. Interval: ${calculatedInterval}ms. ID: ${Date.now()}`);
+  // 2. Prevent double-intervals if dependencies trigger re-render
+  if (intervalRef.current) return; 
 
-    const spawnTicket = () => {
-      // Safety Fallback: If selectedMenu is empty, default to [1, 2, 3, 4]
-      const activeMenu = (selectedMenu && selectedMenu.length > 0)
-        ? selectedMenu
-        : [1, 2, 3, 4];
+  const spawnTicket = () => {
+    const activeMenu = (selectedMenu && selectedMenu.length > 0) ? selectedMenu : [1, 2, 3, 4, 5, 6, 7];
+    const randomId = activeMenu[Math.floor(Math.random() * activeMenu.length)];
+    const recipe = getRecipeById(randomId);
 
-      if (activeMenu.length === 0) {
-         console.error("[TicketQueue] CRITICAL: No recipes available to spawn!");
-         return;
-      }
+    if (recipe) {
+      onNewTicket({ ...recipe, uniqueId: Date.now() + Math.random() });
+    }
+  };
 
-      const randomId = activeMenu[Math.floor(Math.random() * activeMenu.length)];
-      const recipe = getRecipeById(randomId);
+  // 3. The "Kickstart": Spawn one ticket immediately so the player isn't waiting
+  spawnTicket(); 
 
-      if (recipe) {
-        const timestamp = new Date().toLocaleTimeString();
-        console.log(`[TicketQueue] [${timestamp}] Spawning Ticket: ${recipe.name}`);
-        onNewTicket({ ...recipe, uniqueId: Date.now() });
-      } else {
-        console.warn(`[TicketQueue] Could not find recipe for ID ${randomId}`);
-      }
-    };
+  const calculatedInterval = getInterval();
+  intervalRef.current = setInterval(spawnTicket, calculatedInterval);
 
-    // Force one immediate spawn if queue is empty to kickstart service (optional, helps feeling of start)
-    // spawnTicket(); 
-
-    // Start interval
-    intervalRef.current = setInterval(spawnTicket, calculatedInterval);
-
-    return () => {
-      if (intervalRef.current) {
-        console.log(`[TicketQueue] Cleanup: Clearing interval`);
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [gameStatus, currentPhase, shiftPhase, selectedMenu, onNewTicket, getAverageStaffSpeed, currentBookingDifficulty]);
+  return () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+  // ONLY listen to the core status toggles to avoid reset-loops
+}, [gameStatus, shiftPhase]);
 
   // VISUAL RENDER OF QUEUE
   return (
