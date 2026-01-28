@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { GameProvider } from '@/contexts/GameContext';
+import { GameProvider } from './contexts/GameContext';
 import Game from './components/Game';
 import TitleScreen from './components/TitleScreen';
 import CareerScreen from './components/CareerScreen';
